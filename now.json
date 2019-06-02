@@ -1,5 +1,5 @@
 {
   "builds": [
-    {"src": "bot.js", "use": "@now/node@10.16.0"}
+    {"src": "bot.js", "use": "@now/node"}
   ]
 }
