@@ -2,6 +2,7 @@ const fs = require('fs')
 const path = require('path')
 
 const { Collection } = require('discord.js')
+const hangul = require('hangul-js')
 
 const Command = require('../../classes/Command')
 
@@ -62,7 +63,7 @@ class TypingGameCommand extends Command {
       if (m.content !== text) return //msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.notMatch', locale))
 
       const time = (Date.now() - startTime) / 1000
-      const ta = time * 60 / text.length
+      const ta = Math.round(hangul.d(text).length / time * 60)
       msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.correct', locale, time, ta))
       correct = true
       mc.stop()
