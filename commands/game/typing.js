@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const { Collection } = require('discord.js')
+const { Collection, MessageCollector } = require('discord.js')
 const hangul = require('hangul-js')
 
 const Command = require('../../classes/Command')
@@ -19,14 +19,16 @@ class TypingGameCommand extends Command {
     this.loaded = false
     this.loading = false
     this.default = 'ko_KR'
+    this.session = new Collection()
     this.data = new Collection()
   }
 
   async run (client, msg, query, locale) {
     const t = client.locale.t
 
-    if (query.args.length > 0) {
-      if (['reload', '리로드'].includes(query.args[0])) {
+    switch (query.args[0]) {
+      case 'reload':
+      case '리로드':
         this.p = path.join(path.resolve(), 'data', 'typing')
         this.loaded = false
         this.data.forEach((_, lang) => {
@@ -34,44 +36,85 @@ class TypingGameCommand extends Command {
         })
 
         return this.loadData(msg, locale)
+
+      case 'start':
+      case '시작': {
+        if (!this.loaded) {
+          msg.channel.send(t('commands.typing.loading', locale))
+          if (this.loading) return
+          this.p = path.join(path.resolve(), 'data', 'typing')
+          this.loadData(msg, locale)
+        }
+
+        // Stop when session is present
+        if(this.session.has(msg.channel.id)) return msg.channel.send(t('commands.typing.alreadyPlaying', locale))
+
+        // Session placeholder
+        this.session.set(msg.channel.id, {})
+
+        // Choose Language
+        let lang = this.default
+        if(query.args[1]) {
+          if(['영어', 'english'].includes(query.args[1])) lang = 'en_US'
+        }
+
+        if (!this.data.get(this.default)) {
+          msg.channel.send(t('commands.typing.noDefaultData'))
+          return this.stop(msg, locale)
+        }
+        const langData = this.data.get(lang)
+        if(!langData) {
+          msg.channel.send(t('commands.typing.langDataNotExist', locale))
+          return this.stop(msg, locale)
+        }
+
+        const text = langData[Math.floor(Math.random() * langData.length)]
+        const displayText = text.split('').join('\u200b')
+
+        await msg.channel.send(t('commands.typing.start', locale, displayText))
+
+        // Timer start
+        const startTime = Date.now()
+
+        const mc = msg.channel.createMessageCollector((m) => !m.author.bot, { time: 60000 })
+
+        // push the collector to the session storage
+        this.session.set(msg.channel.id, mc)
+
+        mc.on('collect', (m) => {
+          if (m.content === displayText) return msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.doNotCopyPaste', locale))
+
+          if (m.content !== text) return // msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.notMatch', locale))
+
+          const time = (Date.now() - startTime) / 1000
+          const ta = Math.round(hangul.d(text).length / time * 60)
+          msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.correct', locale, time, ta))
+          mc.stop('correct')
+        })
+
+        mc.on('end', (_, reason) => {
+          //if (reason === 'correct') return
+          if (reason === 'stopcmd') msg.channel.send(t('commands.typing.cmdStop', locale))
+          else if (reason !== 'correct') msg.channel.send(t('commands.typing.finish', locale))
+
+          // remove channel from session storage
+          this.session.delete(msg.channel.id)
+        })
+
+        break
       }
+
+      case 'stop':
+      case '종료':
+        this.stop(msg, locale)
     }
+  }
 
-    if (!this.loaded) {
-      msg.channel.send(t('commands.typing.loading', locale))
-      if (this.loading) return
-      this.p = path.join(path.resolve(), 'data', 'typing')
-      this.loadData(msg, locale)
-    }
+  stop(msg, locale) {
+    if(!this.session.has(msg.channel.id)) return msg.channel.send(msg.client.locale.t('commands.typing.notPlaying', locale))
 
-    if (!this.data.get(this.default)) return msg.channel.send(t('commands.typing.noDefaultData'))
-    const lang = this.data.get(this.default)
-    const text = lang[Math.floor(Math.random() * lang.length)]
-    const displayText = text.split('').join('\u200b')
-
-    msg.channel.send(t('commands.typing.start', locale, displayText))
-
-    // Timer start
-    const startTime = Date.now()
-
-    let correct = false
-    const mc = msg.channel.createMessageCollector((m) => !m.author.bot, { time: 60000 })
-
-    mc.on('collect', (m) => {
-      if (m.content === displayText) return msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.doNotCopyPaste', locale))
-
-      if (m.content !== text) return //msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.notMatch', locale))
-
-      const time = (Date.now() - startTime) / 1000
-      const ta = Math.round(hangul.d(text).length / time * 60)
-      msg.channel.send('<@' + m.author.id + '>, ' + t('commands.typing.correct', locale, time, ta))
-      correct = true
-      mc.stop()
-    })
-
-    mc.on('end', () => {
-      if(!correct) return msg.channel.send(t('commands.typing.finish', locale))
-    })
+    if(this.session.get(msg.channel.id) instanceof MessageCollector) this.session.get(msg.channel.id).stop('stopcmd')
+    this.session.delete(msg.channel.id)
   }
 
   loadData (msg, locale) {

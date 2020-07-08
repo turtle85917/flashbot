@@ -253,10 +253,14 @@
       "start": "다음 문장을 **정확하게** 입력해주세요! (제한시간 1분)```\n%1$s\n```",
       "loading": "타자 데이터를 불러오는 중이에요. (최초 1회만 실행되니 잠시만 기다려주세요)",
       "loaded": "타자 데이터를 불러왔어요!",
-      "finish": "끝났어요!",
+      "finish": "아무도 입력하지 않아 타자 게임이 종료되었어요.",
       "notMatch": "입력한 문장이 맞지 않아요.",
       "doNotCopyPaste": "복사/붙여넣기하지 마세요.",
-      "correct": "%1$s초, %2$s타"
+      "correct": "%1$s초, %2$s타",
+      "alreadyPlaying": "이 채널에서 이미 타자 게임이 진행 중이에요. 게임이 끝난 뒤에 다시 시도해보세요.",
+      "notPlaying": "이 채널에서 타자 게임을 진행하고 있지 않아요.",
+      "cmdStop": "타자 게임을 종료했습니다.",
+      "langDataNotExist": "commands.typing.langDataNotExist"
     }
   },
   "CommandHandler": {

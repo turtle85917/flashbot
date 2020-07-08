@@ -263,7 +263,11 @@
       "finish": "Finished!",
       "notMatch": "The sentence you entered does not match.",
       "doNotCopyPaste": "Do not copy/paste.",
-      "correct": "commands.typing.correct"
+      "correct": "%1$s second(s), %2$s character/min",
+      "alreadyPlaying": "The typing game is already playing in this channel.",
+      "notPlaying": "The typing game is not playing in this channel.",
+      "cmdStop": "Stopped the typing game.",
+      "langDataNotExist": "commands.typing.langDataNotExist"
     }
   },
   "CommandHandler": {
