@@ -106,6 +106,8 @@ class TypingGameCommand extends Command {
 
       case 'stop':
       case '종료':
+      case '정지':
+      case '중지':
         this.stop(msg, locale)
     }
   }
